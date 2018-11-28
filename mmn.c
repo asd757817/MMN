@@ -58,8 +58,13 @@ bool q_insert(queue *q, node *n){
 		node *tmp = malloc(sizeof(node));
 		tmp->it = n->it;
 		tmp->st = n->st;
-		q->t += n->it;
-		tmp->at = q->t;
+		if( n->at ==0 ){
+			q->t += n->it;
+			tmp->at = q->t;
+		}
+		else{
+			tmp->at = n->at + n->it;
+		}
 		if(q->head && q->tail){
 			q->tail->next = tmp;
 			q->tail = tmp;

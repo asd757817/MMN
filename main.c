@@ -34,6 +34,7 @@ int main(){
 		fprintf(fp,"%f %f %f\n", tmp->it, tmp->st, tmp->at);
 		tmp = tmp->next;
 	}
+
 	tmp = q_system->head;
 	while(tmp){
 		scheduling(s1, tmp, q_system_2);
