@@ -58,12 +58,15 @@ bool q_insert(queue *q, node *n){
 		node *tmp = malloc(sizeof(node));
 		tmp->it = n->it;
 		tmp->st = n->st;
-		if( n->at ==0 ){
+		/* Assign arrival time	*/
+		/* First time */
+		if( n->at == 0 ){
 			q->t += n->it;
 			tmp->at = q->t;
 		}
+		/* Arrive the next system. Use depart time that left last system */
 		else{
-			tmp->at = n->at + n->it;
+			tmp->at = n->at ;
 		}
 		if(q->head && q->tail){
 			q->tail->next = tmp;
@@ -107,12 +110,12 @@ void scheduling(_system *s, node *n, queue *q_next_system){
 		s->time = n->at;
 		q_insert(min_q, n);
 	}
-
+	
 	if(!(n->next)){
 		bool ifrun = true;
 		while(ifrun){
 			for(int i=0;i<s->n;i++){
-				while((s->servers[i]->head) && (s->servers[i]->t <= s->time)){
+				while((s->servers[i]->head) && (s->servers[i]->dt <= s->time)){
 					double q_dt = s->servers[i]->dt;
 					double n_at = s->servers[i]->head->at;
 					double n_st = s->servers[i]->head->st;
@@ -164,14 +167,11 @@ void scheduling(_system *s, node *n, queue *q_next_system){
 	/* Update system state untill system time*/
 	else{
 		/* For loop for all queue */
-		for(int i=0;i<s->n;i++){ 
-			while((s->servers[i]->head) && (s->servers[i]->t <= s->time)){
+		for(int i=0;i<s->n;i++){
+			while((s->servers[i]->head) && (s->servers[i]->dt <= s->time)){
 				double q_dt = s->servers[i]->dt;
 				double n_at = s->servers[i]->head->at;
 				double n_st = s->servers[i]->head->st;
-
-				//printf("%f %f %f\n", q_dt, n_st, n_at);
-
 				/* Don't wait */
 				if( q_dt <= n_at ){
 					s->servers[i]->dt = n_at + n_st; // Depart time
@@ -185,19 +185,24 @@ void scheduling(_system *s, node *n, queue *q_next_system){
 					else
 						q_pop(s->servers[i]);
 				}
-				/* Need to wait */
+				/* 
+				   Need to wait.
+				   Calculate waiting time and modify arrival time.
+				*/
 				else{
 					s->waiting_time += q_dt - n_at;
-					s->system_time += q_dt - n_at + n_st;
-					s->servers[i]->dt = q_dt + n_st; // Depart time
-					s->total_service_time += n_st;
+					s->system_time += q_dt - n_at;
+					//s->servers[i]->dt = q_dt + n_st; // Depart time
+					//s->total_service_time += n_st;
 					s->servers[i]->head->at = s->servers[i]->dt; // Update arrival time
-					if(q_next_system){
-						node *tmp = q_pop(s->servers[i]);
-						q_insert(q_next_system, tmp);
-					}
-					else
-						q_pop(s->servers[i]);
+					/*
+					 * if(q_next_system){
+					 *     node *tmp = q_pop(s->servers[i]);
+					 *     q_insert(q_next_system, tmp);
+					 * }
+					 * else
+					 *     q_pop(s->servers[i]);
+					 */
 				}
 			}
 		}
@@ -210,7 +215,7 @@ void show_system(_system *s){
 		if( max_dt <= s->servers[i]->dt )
 			max_dt = s->servers[i]->dt;
 	}
-	printf("Service:%f,wt:%f, dt:%f, System:%f\n",s->total_service_time/samples, s->waiting_time/samples, max_dt, s->system_time/samples);
+	printf("Service:%f,wt:%f, dt:%f, System:%f\n",s->total_service_time/count, s->waiting_time/count, max_dt, s->system_time/count);
 }
 
 

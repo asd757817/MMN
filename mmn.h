@@ -45,6 +45,7 @@ void run_service(_system s);
 /* Global variables */
 double lambda_1, lamda_2, mu;			// Parameters for generate exp rv
 int samples;							// Number of events
+int count;
 queue *q_system;						// Queue which stores all events
 
 void scheduling(_system *s, node *n, queue *q_next_system);
