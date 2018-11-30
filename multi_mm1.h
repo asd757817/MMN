@@ -3,7 +3,7 @@
 #include <math.h>
 #include <stdbool.h>
 #include <time.h>
-#include <float.h>
+
 // Define node 
 typedef struct node{
     struct node *next;

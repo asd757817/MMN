@@ -1,4 +1,4 @@
-#include "mmn.h"
+#include "multi_mm1.h"
 
 // Create a queue
 queue *q_new(){
@@ -101,54 +101,76 @@ double rand_exp(double lambda){
 
 void scheduling(_system *s, node *n, queue *q_next_system){
 	if( n ){
-		bool if_insert = false;
-		while( !if_insert ){
-			/* Update system time and update states of all queues */
-			s->time = n->at;
-			for(int i=0;i<s->n;i++){
-				if( s->servers[i]->size > 0 && s->servers[i]->dt <= s->time ){
-					s->servers[i]->dt = s->servers[i]->head->at;
-					if(q_next_system){
-						node *tmp = q_pop(s->servers[i]);
-						q_insert(q_next_system, tmp);
-					}
-					else
-						q_pop(s->servers[i]);
-				}
-			}
-
-			/* Check status of all queues and find the min_dt in all busy queues */
-			queue *min_q = q_new();
-			min_q->dt = DBL_MAX;
-			bool need_wait = false;
-			for(int i=0;i<s->n;i++){
-				/* No need to wait */
-					if(s->servers[i]->size == 0){
-						s->servers[i]->dt = n->at + n->st;
-						s->system_time += n->st;
-						s->total_service_time += n->st;
-						n->at += n->st;
-						if_insert = q_insert(s->servers[i], n);
-						s->servers[i]->dt = n->at;
-						break;
-					}
-					else if( min_q->dt > s->servers[i]->dt ){
-						min_q = s->servers[i];
-						need_wait = true;
-					}
-			}
-			/* If all queue are busy, find the min_dt to calculate the waiting time */
-			if(need_wait){
-				s->waiting_time += min_q->dt - n->at;
-				s->system_time += min_q->dt - n->at;
-				n->at = min_q->dt;
-			}
-		}
-	if(!(n->next)){
-		s->time = get_dt(s);
+		queue *min_q = s->servers[0];
 		for(int i=0;i<s->n;i++){
-			if( s->servers[i]->size > 0 ){
-				if( s->servers[i]->dt <= s->time ){
+			if( min_q->size > s->servers[i]->size ){
+				min_q = s->servers[i];
+			}
+		}
+		s->time = n->at;
+		q_insert(min_q, n);
+	}
+
+	if(!(n->next)){
+		bool ifrun = true;
+		while(ifrun){
+			for(int i=0;i<s->n;i++){
+				while((s->servers[i]->head) && (s->servers[i]->dt <= s->time)){
+					double q_dt = s->servers[i]->dt;
+					double n_at = s->servers[i]->head->at;
+					double n_st = s->servers[i]->head->st;
+					/* Don't wait */
+					if( q_dt <= n_at ){
+						s->servers[i]->dt = n_at + n_st; // Depart time
+						s->system_time += n_st;
+						s->total_service_time += n_st;
+						s->servers[i]->head->at = s->servers[i]->dt; // Update arrival time
+						if(q_next_system){
+							node *tmp = q_pop(s->servers[i]);
+							q_insert(q_next_system, tmp);
+						}
+						else
+							q_pop(s->servers[i]);
+					}
+					/* Need to wait */
+
+					else{
+						s->waiting_time += q_dt - n_at;
+						s->system_time += q_dt - n_at;
+						s->servers[i]->head->at = s->servers[i]->dt; // Update arrival time
+					}
+
+				}
+				double max_dt = s->servers[0]->dt;
+				for(int i=0;i<s->n;i++){
+					if(max_dt <= s->servers[i]->dt)
+						max_dt = s->servers[i]->dt;
+				}
+				s->time = max_dt;
+			}
+			bool keep_run = false;
+			for(int i=0;i<s->n;i++){
+				if(s->servers[i]->head)
+					keep_run = true;
+			}
+			ifrun = keep_run;
+		}
+	}
+
+	/* Update system state untill system time*/
+	else{
+		/* For loop for all queue */
+		for(int i=0;i<s->n;i++){
+			while((s->servers[i]->head) && (s->servers[i]->dt <= s->time)){
+				double q_dt = s->servers[i]->dt;
+				double n_at = s->servers[i]->head->at;
+				double n_st = s->servers[i]->head->st;
+				/* Don't wait */
+				if( q_dt <= n_at ){
+					s->servers[i]->dt = n_at + n_st; // Depart time
+					s->system_time += n_st;
+					s->total_service_time += n_st;
+					s->servers[i]->head->at = s->servers[i]->dt; // Update arrival time
 					if(q_next_system){
 						node *tmp = q_pop(s->servers[i]);
 						q_insert(q_next_system, tmp);
@@ -156,13 +178,19 @@ void scheduling(_system *s, node *n, queue *q_next_system){
 					else
 						q_pop(s->servers[i]);
 				}
+				/* 
+				   Need to wait.
+				   Calculate waiting time and modify arrival time.
+				   */
+				else{
+					s->waiting_time += q_dt - n_at;
+					s->system_time += q_dt - n_at;
+					s->servers[i]->head->at = s->servers[i]->dt; // Update arrival time
+				}
 			}
 		}
 	}
-	}
-
 }
-
 
 void show_system(_system *s){
 	double max_dt = s->servers[0]->dt;

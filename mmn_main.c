@@ -10,7 +10,7 @@ int main(){
 	double *avg_departure_time = malloc(4 * sizeof(double));
 	double *avg_system_time = malloc(4 * sizeof(double));
 
-	int repeat = 10;
+	int repeat = 25;
 	samples = 1000;
 	for(int i=0;i<repeat;i++){
 		_system **s = malloc(4 * sizeof(_system *));
@@ -61,55 +61,48 @@ int main(){
 		}
 		if( count == 0 )
 			count = samples;
-		node *tmp = q_system->head;
 
 		//printf("\nThe last person entered the system at: %f \n", q_system->tail->at);
 		//printf("Total votes: %d \n", count);
 		
-/*
- *         FILE *fp = fopen("test.txt", "w");
- * 
- *         while(tmp){
- *             fprintf(fp,"%f %f %f\n", tmp->it, tmp->st, tmp->at);
- *             tmp = tmp->next;
- *         }
- */
+		FILE *fp = fopen("mmn.txt", "w");
 
+		node *tmp = q_system->head;
+		fprintf(fp,"=====system_1=====\n");
 		tmp = q_system->head;
 		while(tmp){
+			fprintf(fp,"%f %f %f\n", tmp->it, tmp->st, tmp->at);
 			scheduling(s[0], tmp, q_system_2);
 			tmp = tmp->next;
 		}
-
+		
 		tmp = q_system_2->head;
-
-		//fprintf(fp,"=====System_2=====\n");
+		fprintf(fp,"=====system_2=====\n");
 		while(tmp){
 			tmp->it = rand_exp(s[1]->lambda);
 			tmp->st = rand_exp(s[1]->mu);
+			fprintf(fp,"%f %f %f\n", tmp->it, tmp->st, tmp->at);
 			scheduling(s[1], tmp, q_system_3);
-			//fprintf(fp,"%f %f %f\n", tmp->it, tmp->st, tmp->at);
 			tmp = tmp->next;
 		}
 
-
-		//fprintf(fp,"=====System_3=====\n");
+		fprintf(fp,"=====System_3=====\n");
 		tmp = q_system_3->head;
 		while(tmp){
 			tmp->it = rand_exp(s[2]->lambda);
 			tmp->st = rand_exp(s[2]->mu);
+			fprintf(fp,"%f %f %f\n", tmp->it, tmp->st, tmp->at);
 			scheduling(s[2], tmp, q_system_4);
-			//fprintf(fp,"%f %f %f\n", tmp->it, tmp->st, tmp->at);
 			tmp = tmp->next;
 		}
 
-		//fprintf(fp,"=====System_4=====\n");
+		fprintf(fp,"=====System_4=====\n");
 		tmp = q_system_4->head;
 		while(tmp){
 			tmp->it = rand_exp(s[3]->lambda);
 			tmp->st = rand_exp(s[3]->mu);
+			fprintf(fp,"%f %f %f\n", tmp->it, tmp->st, tmp->at);
 			scheduling(s[3], tmp, NULL);
-			//fprintf(fp,"%f %f %f\n", tmp->it, tmp->st, tmp->at);
 			tmp = tmp->next;
 		}
 
