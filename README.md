@@ -80,7 +80,9 @@ Dep_t in first line means the last one leaves system_1 at 708.182249, and the se
 ```
 
 I assume a node enter the next system right after leaving the previous system, so its arrival time in new system equals to departure time in last system. 
+
 The interarrival time is used only in "First system".
+
 If you need to change this, modify mmn.c & multi_mm1.c q_insert() function
 
 ```
