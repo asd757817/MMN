@@ -21,7 +21,8 @@ node *node_new(double it, double st){
 	if(tmp){
 		tmp->it = it;
 		tmp->st = st;
-		tmp->at = 0;
+		tmp->at = -1;
+		tmp->which_server = -1;
 		return tmp;
 	}
 	else
@@ -58,16 +59,18 @@ bool q_insert(queue *q, node *n){
 		node *tmp = malloc(sizeof(node));
 		tmp->it = n->it;
 		tmp->st = n->st;
-		/* Assign arrival time	*/
-		/* First time */
-		if( n->at == 0 ){
+		tmp->dt = n ->dt;
+		tmp->wt = n->wt;
+		
+		/* First time entering the system*/
+		if( n->at == -1 ){
 			q->t += n->it;
 			tmp->at = q->t;
 		}
-		/* Arrive the next system. Use depart time that left last system */
 		else{
 			tmp->at = n->at ;
 		}
+
 		if(q->head && q->tail){
 			q->tail->next = tmp;
 			q->tail = tmp;
@@ -98,13 +101,27 @@ double rand_exp(double lambda){
 	u = rand()/(RAND_MAX + 1.0);// generate random number between 0~1
 	return -log(1-u)/lambda;
 }
+double rand_normal(double std, double mean){
+    double u = rand() / (double)RAND_MAX;
+    double v = rand() / (double)RAND_MAX;
+    double w = sqrt(-2 * log(u)) * cos(2 * M_PI * v);
+    double x ;
+    if( w < -1 )
+         x = mean - std;
+    else if (w > 1)
+         x = mean + std;
+    else
+        x = mean + w*std;
+    return x;
+}
 
-void scheduling(_system *s, node *n, queue *q_next_system){
+void scheduling(_system *s, node *n, queue *q_next_system, FILE *fp){
 	if( n ){
 		queue *min_q = s->servers[0];
 		for(int i=0;i<s->n;i++){
 			if( min_q->size > s->servers[i]->size ){
 				min_q = s->servers[i];
+				n->which_server = i;
 			}
 		}
 		s->time = n->at;
@@ -124,20 +141,20 @@ void scheduling(_system *s, node *n, queue *q_next_system){
 						s->servers[i]->dt = n_at + n_st; // Depart time
 						s->system_time += n_st;
 						s->total_service_time += n_st;
-						s->servers[i]->head->at = s->servers[i]->dt; // Update arrival time
-						if(q_next_system){
-							node *tmp = q_pop(s->servers[i]);
+						s->servers[i]->head->dt = s->servers[i]->dt; // Update arrival time
+						node *tmp = q_pop(s->servers[i]);
+						tmp->at -= tmp->wt;
+						fprintf(fp, "%f %f %f %f %f %d\n", tmp->it, tmp->st, tmp->at, tmp->dt, tmp->wt, tmp->which_server);
+						tmp->at = tmp->dt, tmp->dt=0, tmp->wt=0;
+						if(q_next_system)
 							q_insert(q_next_system, tmp);
-						}
-						else
-							q_pop(s->servers[i]);
 					}
 					/* Need to wait */
-
 					else{
 						s->waiting_time += q_dt - n_at;
 						s->system_time += q_dt - n_at;
-						s->servers[i]->head->at = s->servers[i]->dt; // Update arrival time
+						s->servers[i]->head->at = s->servers[i]->dt; // Shift arrival time to departure time of last person
+						s->servers[i]->head->wt = q_dt - n_at;
 					}
 
 				}
@@ -157,9 +174,9 @@ void scheduling(_system *s, node *n, queue *q_next_system){
 		}
 	}
 
-	/* Update system state untill system time*/
+	/* Update system state */
 	else{
-		/* For loop for all queue */
+		/* For loop for updating all queues */
 		for(int i=0;i<s->n;i++){
 			while((s->servers[i]->head) && (s->servers[i]->dt <= s->time)){
 				double q_dt = s->servers[i]->dt;
@@ -167,29 +184,32 @@ void scheduling(_system *s, node *n, queue *q_next_system){
 				double n_st = s->servers[i]->head->st;
 				/* Don't wait */
 				if( q_dt <= n_at ){
-					s->servers[i]->dt = n_at + n_st; // Depart time
+					s->servers[i]->dt = n_at + n_st; // Departure time 
 					s->system_time += n_st;
 					s->total_service_time += n_st;
-					s->servers[i]->head->at = s->servers[i]->dt; // Update arrival time
+					s->servers[i]->head->dt = s->servers[i]->dt;
+					node *tmp = q_pop(s->servers[i]);
+					tmp->at -= tmp->wt;		// Real arrival time
+					fprintf(fp, "%f %f %f %f %f %d\n", tmp->it, tmp->st, tmp->at, tmp->dt, tmp->wt, tmp->which_server);
+					tmp->at = tmp->dt, tmp->dt=0, tmp->wt=0;
 					if(q_next_system){
-						node *tmp = q_pop(s->servers[i]);
 						q_insert(q_next_system, tmp);
 					}
-					else
-						q_pop(s->servers[i]);
 				}
 				/* 
 				   Need to wait.
 				   Calculate waiting time and modify arrival time.
-				   */
+				*/
 				else{
 					s->waiting_time += q_dt - n_at;
 					s->system_time += q_dt - n_at;
-					s->servers[i]->head->at = s->servers[i]->dt; // Update arrival time
+					s->servers[i]->head->at = s->servers[i]->dt; // Shift arrival time to departure time of last person
+					s->servers[i]->head->wt = q_dt - n_at;
 				}
 			}
 		}
 	}
+
 }
 
 void show_system(_system *s){

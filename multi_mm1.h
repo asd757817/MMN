@@ -10,6 +10,9 @@ typedef struct node{
     double it;  // interarrival time
     double st;  // service time
 	double at;  // arrival time
+	double dt;  // departure time
+	double wt;  // waiting time
+	int which_server;
 } node;
 
 // Define queue
@@ -40,6 +43,7 @@ bool q_insert(queue *q, node *n);		// Insert node into queue
 node *q_pop(queue *q);					// Pop a node out 
 
 double rand_exp(double lambda);			// Generate exponential RV with lambda rate
+double rand_normal(double std, double mean);
 void run_service(_system s);
 
 /* Global variables */
@@ -48,6 +52,6 @@ int samples;							// Number of events
 int count;
 queue *q_system;						// Queue which stores all events
 
-void scheduling(_system *s, node *n, queue *q_next_system);
+void scheduling(_system *s, node *n, queue *q_next_system, FILE *fp);
 void show_system();
 double get_dt(_system *s);

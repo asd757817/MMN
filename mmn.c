@@ -21,7 +21,8 @@ node *node_new(double it, double st){
 	if(tmp){
 		tmp->it = it;
 		tmp->st = st;
-		tmp->at = 0;
+		tmp->at = -1;			// initialize
+		tmp->which_server = -1;	// initialize
 		return tmp;
 	}
 	else
@@ -58,16 +59,18 @@ bool q_insert(queue *q, node *n){
 		node *tmp = malloc(sizeof(node));
 		tmp->it = n->it;
 		tmp->st = n->st;
-		/* Assign arrival time	*/
-		/* First time */
-		if( n->at == 0 ){
-			q->t += n->it;
+		tmp->dt = n->dt;
+		tmp->wt = n->wt;
+		
+		/* First time entering the system */
+		if( n->at == -1 ){
+			q->t += n->it;	
 			tmp->at = q->t;
 		}
-		/* Arrive the next system. Use depart time that left last system */
 		else{
-			tmp->at = n->at ;
+			tmp->at = n->at;
 		}
+
 		if(q->head && q->tail){
 			q->tail->next = tmp;
 			q->tail = tmp;
@@ -99,7 +102,22 @@ double rand_exp(double lambda){
 	return -log(1-u)/lambda;
 }
 
-void scheduling(_system *s, node *n, queue *q_next_system){
+double rand_normal(double std, double mean){
+	double u = rand() / (double)RAND_MAX;
+	double v = rand() / (double)RAND_MAX;
+	double w = sqrt(-2 * log(u)) * cos(2 * M_PI * v);
+	double x ;
+	/* Constrain the value interval */
+	if( w < -1 )
+		x = mean - std;
+	else if (w > 1)
+		x = mean + std;
+	else
+		x = mean + w*std;
+	return x;
+}
+
+void scheduling(_system *s, node *n, queue *q_next_system, FILE *fp){
 	if( n ){
 		bool if_insert = false;
 		while( !if_insert ){
@@ -110,6 +128,7 @@ void scheduling(_system *s, node *n, queue *q_next_system){
 					s->servers[i]->dt = s->servers[i]->head->at;
 					if(q_next_system){
 						node *tmp = q_pop(s->servers[i]);
+						tmp->at = tmp->dt, tmp->dt =0, tmp->wt=0;
 						q_insert(q_next_system, tmp);
 					}
 					else
@@ -120,47 +139,50 @@ void scheduling(_system *s, node *n, queue *q_next_system){
 			/* Check status of all queues and find the min_dt in all busy queues */
 			queue *min_q = q_new();
 			min_q->dt = DBL_MAX;
-			bool need_wait = false;
+			bool need_wait = true;
 			for(int i=0;i<s->n;i++){
-				/* No need to wait */
-					if(s->servers[i]->size == 0){
-						s->servers[i]->dt = n->at + n->st;
-						s->system_time += n->st;
-						s->total_service_time += n->st;
-						n->at += n->st;
-						if_insert = q_insert(s->servers[i], n);
-						s->servers[i]->dt = n->at;
-						break;
-					}
-					else if( min_q->dt > s->servers[i]->dt ){
-						min_q = s->servers[i];
-						need_wait = true;
-					}
+				/* Server isn't busy, assign node to it */
+				if(s->servers[i]->size == 0){
+					s->servers[i]->dt = n->at + n->st;
+					s->system_time += n->st;
+					s->total_service_time += n->st;
+					n->dt = n->at + n->st;
+					n->at = n->at - n->wt;	// shift back
+					/* Assign node to queue */
+					n->which_server = i;
+					if_insert = q_insert(s->servers[i], n);
+					need_wait = false;
+					break;
+				}
+				else if( min_q->dt > s->servers[i]->dt ){
+					min_q = s->servers[i];
+				}
 			}
 			/* If all queue are busy, find the min_dt to calculate the waiting time */
 			if(need_wait){
 				s->waiting_time += min_q->dt - n->at;
+				n->wt = min_q->dt - n->at;
 				s->system_time += min_q->dt - n->at;
-				n->at = min_q->dt;
+				n->at = min_q->dt;	// shift real arrival time to min_q->dt
 			}
 		}
-	if(!(n->next)){
-		s->time = get_dt(s);
-		for(int i=0;i<s->n;i++){
-			if( s->servers[i]->size > 0 ){
-				if( s->servers[i]->dt <= s->time ){
-					if(q_next_system){
-						node *tmp = q_pop(s->servers[i]);
-						q_insert(q_next_system, tmp);
+		if(!(n->next)){
+			s->time = get_dt(s);
+			for(int i=0;i<s->n;i++){
+				if( s->servers[i]->size > 0 ){
+					if( s->servers[i]->dt <= s->time ){
+						if(q_next_system){
+							node *tmp = q_pop(s->servers[i]);
+							q_insert(q_next_system, tmp);
+						}
+						else
+							q_pop(s->servers[i]);
 					}
-					else
-						q_pop(s->servers[i]);
 				}
 			}
 		}
+		fprintf(fp, "%f %f %f %f %f %d\n", n->it, n->st, n->at, n->dt, n->wt, n->which_server);
 	}
-	}
-
 }
 
 

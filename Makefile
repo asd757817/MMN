@@ -1,8 +1,8 @@
 all: run
 
-run: mmn.c mmn.h mmn_main.c multi_mm1.c multi_mm1.h multi_main.c
-	gcc -o mmn mmn_main.c -lm && ./mmn
-	gcc -o multi_mm1 multi_main.c -lm && ./multi_mm1
+run: mmn.c mmn.h main_mmn.c multi_mm1.c multi_mm1.h main_multi_mm1.c
+	gcc -o mmn main_mmn.c -lm && ./mmn
+	gcc -o multi_mm1 main_multi_mm1.c -lm && ./multi_mm1
 	
 
 clean:
