@@ -9,19 +9,20 @@ int main(){
 	double *avg_departure_time = malloc(4 * sizeof(double));
 	double *avg_system_time = malloc(4 * sizeof(double));
 
-	int repeat = 1;
-	samples = 50;
-	double std_2 = 0.3, mean_2 = 1;
-	double std_3 = 0.1, mean_3 = 0.5;
-	double std_4 = 0.3, mean_4 = 1;
+	int repeat = 10;
+	samples = 800;
+	double x1 = 1, x2 = 2, x3 = 3, x4 = 4;
+	double std_2 = 0.1, mean_2 = 1;
+	double std_3 = 0.1, mean_3 = 0.6;
+	double std_4 = 0.3, mean_4 = 1.5;
 	FILE *fp = fopen("output_mmn.txt", "w");
-
+	
 	for(int i=0;i<repeat;i++){
 		_system **s = malloc(4 * sizeof(_system *));
-		s[0] = system_new(2, 0.25, 1.5);
-		s[1] = system_new(4, 0, 1.2);
-		s[2] = system_new(2, 0, 1.5);
-		s[3] = system_new(4, 0, 1);
+		s[0] = system_new(1, x1, 1.5);
+		s[1] = system_new(2, 0, 1.2);
+		s[2] = system_new(1, 0, 1.5);
+		s[3] = system_new(2, 0, 1);
 
 		q_system = q_new();
 		queue *q_system_2 = q_new();
@@ -37,21 +38,21 @@ int main(){
 					printf("Inset node failed !\n");
 			}
 			else if(!q_system->tail || q_system->tail->at <= 240){
-				if(q_insert(q_system, node_new(rand_exp(0.5), rand_normal(0.1,0.6))))
+				if(q_insert(q_system, node_new(rand_exp(x2), rand_normal(0.1,0.6))))
 					continue;
 				else
 					printf("Inset node failed !\n");
 			}
 
 			else if( !q_system->tail || q_system->tail->at <= 360){
-				if(q_insert(q_system, node_new(rand_exp(2.5), rand_normal(0.1,0.6))))
+				if(q_insert(q_system, node_new(rand_exp(x3), rand_normal(0.1,0.6))))
 					continue;
 				else
 					printf("Inset node failed !\n");
 			}
 
 			else if( !q_system->tail || q_system->tail->at <= 480){
-				if(q_insert(q_system, node_new(rand_exp(3.5), rand_normal(0.1,0.6))))
+				if(q_insert(q_system, node_new(rand_exp(x4), rand_normal(0.1,0.6))))
 					continue;
 				else
 					printf("Inset node failed !\n");
@@ -114,7 +115,9 @@ int main(){
 
 	printf("\n");
 	for(int i=0;i<4;i++){
-		printf("Ser_t:%f, Wai_t:%f, Dep_t:%f, Sys_t:%f\n", avg_service_time[i]/repeat, avg_waiting_time[i]/repeat, avg_departure_time[i]/repeat, avg_system_time[i]/repeat);
+		int hours = (int) avg_departure_time[i]/repeat/60;
+	    int minutes = (int)avg_departure_time[i]/repeat%60;
+		printf("Service_time:%f, Waiting_time:%f, System_time:%f, 最後一人離開投票所時間：%d:%02d\n"",", avg_service_time[i]/repeat, avg_waiting_time[i]/repeat, avg_system_time[i]/repeat, hours+8, minutes);
 	}
 	/*
 	 * show_system(s[0]);

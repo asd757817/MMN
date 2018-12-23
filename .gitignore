@@ -3,3 +3,8 @@
 *.swp
 mmn
 mm1.c
+mmn_output
+multi_mm1_output
+out*
+scripts/
+data/

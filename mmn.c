@@ -108,10 +108,10 @@ double rand_normal(double std, double mean){
 	double w = sqrt(-2 * log(u)) * cos(2 * M_PI * v);
 	double x ;
 	/* Constrain the value interval */
-	if( w < -1 )
-		x = mean - std;
-	else if (w > 1)
-		x = mean + std;
+	if( w < -3 )
+		x = mean - 3*std;
+	else if (w > 3)
+		x = mean + 3*std;
 	else
 		x = mean + w*std;
 	return x;
