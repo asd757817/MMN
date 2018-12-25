@@ -61,6 +61,7 @@ bool q_insert(queue *q, node *n){
 		tmp->st = n->st;
 		tmp->dt = n ->dt;
 		tmp->wt = n->wt;
+        tmp->which_server = n->which_server;
 		
 		/* First time entering the system*/
 		if( n->at == -1 ){
@@ -118,6 +119,7 @@ double rand_normal(double std, double mean){
 void scheduling(_system *s, node *n, queue *q_next_system, FILE *fp){
 	if( n ){
 		queue *min_q = s->servers[0];
+        n->which_server = 0;
 		for(int i=0;i<s->n;i++){
 			if( min_q->size > s->servers[i]->size ){
 				min_q = s->servers[i];
@@ -126,6 +128,7 @@ void scheduling(_system *s, node *n, queue *q_next_system, FILE *fp){
 		}
 		s->time = n->at;
 		q_insert(min_q, n);
+        /* printf("%d\n", min_q->head->which_server); */
 	}
 
 	if(!(n->next)){
